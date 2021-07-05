@@ -202,7 +202,127 @@ extern const int bufSize;
 
 
 
+### `constexpr`和常量表达式
 
+**常量表达式**是指值不会改变并且在编译过程就能得到计算结果的表达式. 显然字面值属于常量表达式. 采用常量表达式初始化的`const`对象也是常量表达式.
+
+一个对象是不是常量表达式由它的数据类型和初始值共同决定, 例如:
+
+```c++
+const int max_files = 20; // max_file常量表达式
+const int limit = max_file + 1; // limit是常量表达式
+int staff_size = 27; // 不是常量表达式
+```
+
+#### `constexpr`变量
+
+允许将变量声明为`constexpr`类型以便由编译器来验证变量的值是否是一个常量表达式. **声明为`constexpr`的变量一定是一个常量, 而且必须用常量表达式初始化**:
+
+```c++
+constexpr int mf = 20;
+constexpr int limit = mf + 1;
+constexpr int sz = size(); // 只有当size是一个constexpr函数时才是一条正确的声明语句
+```
+
+新标准允许定义一种特殊`constexpr`函数, 这种函数简单到足以在编译的时候就计算结果, 这样就能用`constexpr`函数去初始化`constexpr`变量了.
+
+> 一般来说, **如果你认为变量是一个常量表达式, 那么就把它声明为`constexpr`类型**
+
+
+
+### 字面值类型
+
+常量表达式的值在编译时就得到计算, 因此对声明`constexpr`时用到的类型必须有所限制, 一般把这些类型称为**字面值类型**. 到目前为止接触过的数据类型中:
+
+* 算术类型
+* 引用
+* 指针
+
+都属于字面值类型. **尽管指针和引用都能定义成`constexpr`**, 但`constexpr`指针的初始值必须是`nullptr`或者`0`, 或者是存储于某个固定地址中对象.  函数体内定义的变量一般来说并非存放在**固定地址中**, 因此`constexpr`指针不能指向这样的变量. 定义于所有函数体之外的对象其地址**固定不变**. 因此`constexpr`能绑定到这样的变量上, `constexpr`指针也能指向这样的变量.
+
+
+
+#### 指针和`constexpr`
+
+在`constexpr`声明中如果定义了一个指针, 限定符`constexpr`仅对指针有效, 与指针所指的对象无关
+
+```c++
+constexpr int *q = nullptr; // q是一个指向整数的常量指针
+// q是一个常量指针, constexpr把它所定义的对象置为了顶层const
+```
+
+
+
+### 处理类型
+
+#### 类型别名
+
+**类型别名**是否中类型的同义词, 可以让复杂类型名字变得简单明了, 易于理解和使用, 有两种方法可用于定义类型别名:
+
+* `typedef`
+
+  ```c++
+  typedef double wages;
+  typedef wages base, *p;
+  ```
+
+  `typedef`作为声明语句前缀之后, 变量名就代表了类型别名, 这里和`C`的用法一致.
+
+* `using`
+
+  新标准规定了**别名声明**来定义类型的别名
+
+  ```c++
+  using SI = Sales_item; // SI是Sales_item的同义词
+  ```
+
+  这种方法用关键字`using`作为别名声明的开始, 其后紧跟别名和等号, 其作用是把等号左侧的名字规定成等号右侧类型的别名.
+
+#### 指针, 常量和类型别名
+
+```c++
+typedef char *pstring;
+const pstring cstr = 0; // cstr是指向char的常量指针
+const pstring *ps; // ps是一个指针, 它的对象是指向char的常量指针
+```
+
+可以这样解释: `pstring`是一个指向`char`的指针, 那么`const pstring cstr = 0`就是一个常量指针指向`char`
+
+
+
+### `auto`类型说明符
+
+可以让编译器代替我们去分析表达式所属的类型, 显然`auto`定义的变量必须要有初始值.
+
+#### 符合类型, 常量和`auto`
+
+* 遇到引用时, 以引用中值的类型作为`auto`类型
+
+* `auto`会忽略掉**顶层`const`**, 同时**底层`const`**会被保留下来, 比如**指向常量的指针**
+
+  ```c++
+  const int ci = i, &cr = ci;
+  auto b = ci; // b是一次整数
+  auto c = cr; // c是一个整数
+  auto d = &i; // d是一个整型指针
+  auto e = &ci; // e是一个指向整型常量的指针(对常量对象取地址是一种底层const)
+  ```
+
+* 如果希望`auto`推断出顶层`const`, 需要指出
+
+  ```c++
+  const auto f = ci; // ci为int, f是const int
+  ```
+
+* 还可以将引用类型设为`auto`
+
+  ```c++
+  auto &g = ci; // g是一个整型常量引用
+  auto &h = 42; 
+  const auto &j = 42;
+  ```
+
+  
 
 
 
